@@ -1,12 +1,16 @@
-"""G3 step 2a — real import check for the carried unit-1 code.
+"""G3 step 2a — real import + lazy-construction check for the carried unit-1 code.
 
-Imports every carried module and fails if any import raises, or if any backend
-module outside the carried set gets loaded (proves the closure is complete).
+1. Imports every carried module; fails if any import raises, or if any backend
+   module outside the carried set gets loaded (proves the closure is complete).
+2. Builds the lazily-created clients that need extra packages at call time:
+   the Qdrant HTTP client (http2 -> h2) and the OpenAI embeddings client.
+   No network call is made: nothing is sent to Qdrant or OpenAI.
 Run from the repo root: python scripts/smoke_import.py
 """
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import sys
 from pathlib import Path
@@ -32,6 +36,26 @@ PACKAGES = {
 }
 
 
+async def lazy_clients() -> list[str]:
+    errors: list[str] = []
+    from backend.core.qdrant_db import QdrantClient
+
+    qc = QdrantClient(qdrant_url="http://127.0.0.1:1", collection_name="showroom_legal_synthetic")
+    try:
+        await qc._get_client()  # builds httpx.AsyncClient(http2=True); no request is sent
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"QdrantClient._get_client: {type(exc).__name__}: {exc}")
+    finally:
+        await qc.close()
+    try:
+        from backend.core.embeddings import EmbeddingsGenerator
+
+        EmbeddingsGenerator(provider="openai", api_key="sk-showroom-smoke-not-a-key")
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"EmbeddingsGenerator(openai): {type(exc).__name__}: {exc}")
+    return errors
+
+
 def main() -> int:
     failed = 0
     for name in CARRIED:
@@ -45,7 +69,11 @@ def main() -> int:
     tk = "ya" if "tiktoken" in sys.modules else "tidak"
     print(f"import: {len(CARRIED) - failed}/{len(CARRIED)} modul OK; "
           f"modul backend di luar daftar: {len(leaked)} {leaked if leaked else ''}; tiktoken termuat: {tk}")
-    return 1 if failed or leaked else 0
+    lazy = asyncio.run(lazy_clients()) if not failed else ["dilewati: import gagal"]
+    for line in lazy:
+        print(f"GAGAL {line}")
+    print(f"klien malas: {2 - len(lazy)}/2 OK (Qdrant http2, OpenAI)")
+    return 1 if failed or leaked or lazy else 0
 
 
 if __name__ == "__main__":
