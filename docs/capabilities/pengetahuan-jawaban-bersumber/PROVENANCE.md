@@ -74,3 +74,10 @@ Hanya `python3 -m py_compile` (sintaks) yang dijalankan di langkah ini. Import n
 **Tingkat bukti: MOCK, bukan integrasi.** Qdrant palsu di dalam proses (`httpx.MockTransport`; kode `QdrantClient` asli tetap jalan sampai lapisan HTTP) + embedding leksikal deterministik. Uji A3 "tidak terjangkau" memakai koneksi TCP nyata ke port tertutup.
 
 **Hasil (cloud, Python 3.14.6):** 11/11 uji lulus. Mutasi: menghapus probe `get_stats` → 1 uji merah; menghapus cek `scores` → 1 uji merah. Peringatan `DATABASE_URL not configured` dari indexer = perilaku yang diputuskan (DEPENDENCIES §5.2).
+
+## 8. Persiapan G4 — README setup, Qdrant lokal, uji integrasi, kalibrasi, receipt (14 Okt 2026)
+
+- **Diukur di MacBook operator:** i5-3210M (Ivy Bridge, AVX tanpa AVX2), macOS 12.7.6, tanpa Docker. Binary resmi Qdrant v1.19.2 `x86_64-apple-darwin` jalan: koleksi 1536-dim, 200 titik, search teratas benar, log 0 error.
+- **Kode baru:** `scripts/qdrant_local.sh` (start/stop/status, 127.0.0.1, data di `.showroom-data/`, memastikan path storage benar-benar dipakai), `tests/integration/test_real_qdrant.py` (dilewati kecuali `SHOWROOM_INTEGRATION=1`; menolak menghapus koleksi di host selain localhost), `scripts/calibrate.py`, `scripts/receipt.py` (receipt terikat commit; tidak sah bila tree kotor atau ada uji gagal), README dengan blok setup bertanda.
+- **Cloud, Qdrant 1.19.2 nyata + embedding leksikal:** 14/14 lulus; tanpa flag 11 lulus + 3 dilewati; Qdrant dimatikan → uji A1/A2 integrasi merah (kontrol negatif). Kalibrasi leksikal: di korpus ≥ 0.527, luar ≤ 0.200, celah 0.327 — **bukan** kalibrasi akhir.
+- **Belum:** mode `openai` menunggu API key khusus showroom dari Antonello (rahasia = wewenang Antonello). A1/A2 kontrak baru tertutup oleh receipt `embeddings_mode=openai`.
