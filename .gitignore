@@ -4,3 +4,6 @@
 *.key
 node_modules/
 .DS_Store
+!.env.example
+.showroom-data/
+__pycache__/
