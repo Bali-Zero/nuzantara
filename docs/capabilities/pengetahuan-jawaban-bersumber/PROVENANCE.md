@@ -51,3 +51,10 @@
 ## 5. Belum dibuktikan
 
 Hanya `python3 -m py_compile` (sintaks) yang dijalankan di langkah ini. Import nyata butuh paket pihak ketiga (qdrant-client, asyncpg, openai, …) — itu G3 langkah 2 / G4. Di cloud: `py_compile` lulus di Python 3.8.20 dan 3.13 (28 berkas). Catatan untuk G4: beberapa berkas memakai anotasi `X | None` saat runtime → kemungkinan butuh Python ≥ 3.10 untuk import nyata; ukur versi Python di Mac. Mock ≠ integrasi ≠ observasi langsung.
+
+## 6. G3 langkah 2a — import nyata (14 Okt 2026)
+
+- `requirements.txt`: 4 paket, versi = `requirements.lock.txt` Teman2 @ ad3278690d (asyncpg 0.31.0, httpx 0.28.1, openai 2.53.0, tiktoken 0.14.0). `opentelemetry` (tracing.py:15) dan `sentence_transformers` (embeddings.py:296) dijaga `try`/lazy → sengaja tidak dipasang. `qdrant-client` tidak diperlukan: `core/qdrant_db.py` memakai httpx.
+- `scripts/smoke_import.py`: import 19 modul dibawa + gagal bila ada modul `backend.*` lain ikut termuat.
+- **Efek samping saat import (temuan):** `embeddings.py:42` memanggil `tiktoken.get_encoding("cl100k_base")` di level modul → unduh ±1,7 MB dari `openaipublic.blob.core.windows.net` saat pertama kali. Kegagalan jaringan **bukan** `ImportError` → tidak tertangkap oleh `except ImportError` di `:43` → `embeddings`, `legal.chunker`, `legal.hierarchical_indexer` gagal di-import tanpa jaringan (diukur di cloud: 16/19). Showroom: `TIKTOKEN_CACHE_DIR=./.showroom-data/tiktoken` → unduh sekali, berikutnya offline. Perilaku Teman2 tidak diubah; dicatat untuk G4 (clone bersih butuh jaringan satu kali) dan sebagai kandidat perbaikan di Teman2.
+- Cloud, Python 3.14.6, tanpa tiktoken (jalur `except ImportError`): 19/19 OK, 0 modul bocor. Kontrol dengan tiktoken + jaringan: Mac Subhi (proxy cloud menolak host tiktoken, 403).

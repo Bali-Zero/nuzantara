@@ -1,0 +1,7 @@
+# Showroom unit 1 runtime — pinned to Teman2 apps/backend-rag/requirements.lock.txt @ ad3278690d.
+# Measured 14 Oct 2026: these four are the only third-party imports the carried code needs
+# (opentelemetry and sentence-transformers are guarded/optional and intentionally absent).
+asyncpg==0.31.0
+httpx==0.28.1
+openai==2.53.0
+tiktoken==0.14.0
