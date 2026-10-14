@@ -1,0 +1,3 @@
+# Test-only dependency for the showroom acceptance suite (pin = Teman2 requirements.lock.txt @ ad3278690d).
+-r requirements.txt
+pytest==9.1.1
