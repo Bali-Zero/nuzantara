@@ -7,3 +7,4 @@ node_modules/
 !.env.example
 .showroom-data/
 __pycache__/
+.venv/
