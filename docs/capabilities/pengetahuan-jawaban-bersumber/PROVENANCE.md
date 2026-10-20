@@ -59,3 +59,18 @@ Hanya `python3 -m py_compile` (sintaks) yang dijalankan di langkah ini. Import n
 - **Efek samping saat import (temuan):** `embeddings.py:42` memanggil `tiktoken.get_encoding("cl100k_base")` di level modul → unduh ±1,7 MB dari `openaipublic.blob.core.windows.net` saat pertama kali. Kegagalan jaringan **bukan** `ImportError` → tidak tertangkap oleh `except ImportError` di `:43` → `embeddings`, `legal.chunker`, `legal.hierarchical_indexer` gagal di-import tanpa jaringan (diukur di cloud: 16/19). Showroom: `TIKTOKEN_CACHE_DIR=./.showroom-data/tiktoken` → unduh sekali, berikutnya offline. Perilaku Teman2 tidak diubah; dicatat untuk G4 (clone bersih butuh jaringan satu kali) dan sebagai kandidat perbaikan di Teman2.
 - Cloud, Python 3.14.6, tanpa tiktoken (jalur `except ImportError`): 19/19 OK, 0 modul bocor. Kontrol dengan tiktoken + jaringan: Mac Subhi (proxy cloud menolak host tiktoken, 403).
 - **Koreksi 14 Okt (sebelum review):** smoke versi pertama hanya meng-import; ia tidak melihat `core/qdrant_db.py:334` yang membangun `httpx.AsyncClient(http2=True)` secara malas → tanpa paket `h2`, **setiap** panggilan Qdrant gagal `ImportError`. Diukur di cloud: `ImportError: Using http2=True, but the 'h2' package is not installed`. Ditambah `h2==4.4.1`, `hpack==4.2.0`, `hyperframe==6.1.0` (pin lock Teman2), dan smoke kini juga membangun klien Qdrant + OpenAI (tanpa request jaringan). Import malas pihak ketiga lain di berkas dibawa: hanya `opentelemetry` (dijaga) dan `sentence_transformers` (hanya provider non-openai).
+
+## 7. G3 langkah 2b — adaptor tipis + korpus sintetis + uji A1–A3 (14 Okt 2026)
+
+**Kode baru showroom (bukan dibawa):** `showroom/pipeline.py` (`ingest`, `answer`), `tests/` (fakes + uji penerimaan), `corpus/` (3 Peraturan Desa **fiktif**, 10 Pasal), `requirements-dev.txt` (pytest 9.1.1).
+
+**Temuan pada kode dibawa (Teman2 ad3278690d) yang membentuk adaptor:**
+1. `QdrantClient.search` menelan **semua** error setelah 3× retry dan mengembalikan hasil kosong (tanpa kunci `scores`); error 4xx (mis. koleksi tidak ada) juga dibalas kosong. Tanpa penjaga, "vector store mati" terlihat seperti "tidak ada bukti". Adaptor: probe `get_stats()` dulu, lalu dict tanpa `scores` = `unavailable`.
+2. Connect timeout 10 s per percobaan × retry → bisa melewati batas kontrak. Adaptor membatasi seluruh panggilan dengan `asyncio.wait_for(10 s)`.
+3. `CitationService.extract_sources_from_rag` hanya menghasilkan judul/url/skor; adaptor menambah `document_id`, `pasal`, `quote` (kontrak §3).
+
+**Koreksi keputusan U3 (DEPENDENCIES §5.3) — kesalahan Atlas:** ambang 0.15 Teman2 berlaku untuk *evidence_score gabungan* (`reasoning_utils.py:341`: kualitas sumber 0–0.4 + relevansi 0–0.6), bukan cosine mentah. Diukur di mock: 0.15 pada cosine mentah meloloskan 2 dari 4 pertanyaan di luar korpus. Keputusan Subhi 14 Okt: ambang cosine terpisah `SHOWROOM_MIN_SCORE`, sementara **0.35** (tengah celah mock: di korpus ≥ 0.527, di luar ≤ 0.200), **wajib dikalibrasi ulang dengan embedding OpenAI nyata di G4** sebelum A2 dianggap lulus.
+
+**Tingkat bukti: MOCK, bukan integrasi.** Qdrant palsu di dalam proses (`httpx.MockTransport`; kode `QdrantClient` asli tetap jalan sampai lapisan HTTP) + embedding leksikal deterministik. Uji A3 "tidak terjangkau" memakai koneksi TCP nyata ke port tertutup.
+
+**Hasil (cloud, Python 3.14.6):** 11/11 uji lulus. Mutasi: menghapus probe `get_stats` → 1 uji merah; menghapus cek `scores` → 1 uji merah. Peringatan `DATABASE_URL not configured` dari indexer = perilaku yang diputuskan (DEPENDENCIES §5.2).
