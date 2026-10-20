@@ -15,9 +15,53 @@ Only what is safe to be public goes into this repo. Every PR must pass this chec
 ## Structure
 
 - `docs/capabilities/<unit>/`: the contract (`CONTRACT.md`), dependencies (`DEPENDENCIES.md`), and code provenance (`PROVENANCE.md`) for each capability.
+- `backend/`: code carried from the internal platform for the capabilities below (verbatim where possible; rewritten files are listed in each unit's `PROVENANCE.md`).
+- `showroom/`: thin adapters written for this repo.
+- `corpus/`: synthetic sample documents only (3 **fictional** village regulations).
+- `scripts/`, `tests/`: setup, acceptance tests, calibration and receipts.
 
 ## Unit Status
 
 | Unit | Latest gate |
 |---|---|
-| pengetahuan-jawaban-bersumber (sourced answers) | G2 (dependencies) — approved 14 Oct 2026 |
+| pengetahuan-jawaban-bersumber (sourced answers) | G2 (dependencies) — approved 14 Oct 2026 · G3 (carry + adapter) and G4 preparation — pending review |
+
+## Capability 1 — pengetahuan → jawaban bersumber (sourced answers)
+
+Contract, dependencies and provenance: `docs/capabilities/pengetahuan-jawaban-bersumber/`.
+
+### Prerequisites
+
+- Python ≥ 3.10 (measured: 3.14.6 on macOS 12.7.6, Intel), `git`, `curl`.
+- No Docker needed: the official Qdrant binary is run locally by `scripts/qdrant_local.sh`
+  (bound to 127.0.0.1 only, data under `.showroom-data/`).
+- Network on first setup: PyPI, the Qdrant release on GitHub, and the tiktoken encoding download.
+- `OPENAI_API_KEY` only for `openai` mode (calibration and closing A1/A2). Put it in `.env`, never commit it.
+
+### Setup from a clean clone
+
+The block between the markers below is what the G4 check runs as-is, so this README is the source of the setup.
+
+<!-- setup:start -->
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -q -r requirements-dev.txt
+[ -e .env ] || cp .env.example .env
+export TIKTOKEN_CACHE_DIR="$PWD/.showroom-data/tiktoken"
+.venv/bin/python scripts/smoke_import.py
+scripts/qdrant_local.sh start
+```
+<!-- setup:end -->
+
+### Running
+
+| Goal | Command | Evidence produced |
+|---|---|---|
+| Mock tests (no services) | `.venv/bin/python scripts/receipt.py` | receipt `mock-only` |
+| Real Qdrant, lexical embeddings | `SHOWROOM_INTEGRATION=1 .venv/bin/python scripts/receipt.py` | receipt `lexical` |
+| Full run, real OpenAI embeddings | `set -a; . ./.env; set +a; SHOWROOM_INTEGRATION=1 SHOWROOM_EMBEDDINGS=openai .venv/bin/python scripts/receipt.py` | receipt `openai` (closes A1/A2) |
+| Threshold calibration | `SHOWROOM_EMBEDDINGS=openai .venv/bin/python scripts/calibrate.py` | `.showroom-data/calibration-*.json` |
+| Stop Qdrant | `scripts/qdrant_local.sh stop` | — |
+
+A receipt (`.showroom-data/receipts/<commit>-<mode>.json`) is only valid when the tree is clean and every test passes.
+Mock ≠ integration ≠ direct observation: read `limitations` in every receipt.
