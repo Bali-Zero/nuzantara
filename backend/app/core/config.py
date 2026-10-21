@@ -1,11 +1,11 @@
 """Showroom settings shim — REWRITTEN, not carried.
 
-Teman2 ``backend/app/core/config.py`` (1392 lines at ad3278690d) is not copied:
+The upstream ``backend/app/core/config.py`` (1392 lines) is not copied:
 it embeds staff e-mail addresses and a phone number (SHOWROOM principle §3.3,
 zero personal data). The carried modules read exactly these nine attributes
 (measured 14 Oct 2026); everything else is out of scope for unit 1.
-Env var names and defaults mirror Teman2, except ``qdrant_timeout`` (absent in
-Teman2 -> qdrant_db falls back to 30 s; set to 10 s here per CONTRACT §8.2)
+Env var names and defaults mirror upstream, except ``qdrant_timeout`` (absent
+upstream -> qdrant_db falls back to 30 s; set to 10 s here per CONTRACT §8.2)
 and ``environment`` (default "showroom").
 """
 
