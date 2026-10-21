@@ -1,13 +1,13 @@
 """Thin pipeline for unit 1: synthetic legal text -> index -> search -> sourced answer.
 
-NEW showroom code (DEPENDENCIES §5.1). It composes carried Teman2 modules and adds
+NEW showroom code (DEPENDENCIES §5.1). It composes carried upstream modules and adds
 only what CONTRACT.md requires on top of them:
 
 * ``ingest``  — reject input without Pasal structure (CONTRACT §8.3), then index with
   the carried ``HierarchicalIndexer`` (dense only, no chunker, no DB: DEPENDENCIES §5.2).
 * ``answer``  — return ``{answer, sources, status[, error]}``.
 
-Why the guards exist (measured on the carried code, Teman2 ad3278690d):
+Why the guards exist (measured on the carried code, upstream snapshot 14 Oct 2026):
 * ``QdrantClient.search`` swallows every error after 3 retries and returns an empty
   result (qdrant_db.py search -> except Exception -> empty dict without ``scores``), and
   returns an empty result on 4xx such as a missing collection. Without a probe, "vector
@@ -29,8 +29,8 @@ from backend.services.search.citation_service import CitationService
 
 COLLECTION = "showroom_legal_synthetic"  # CONTRACT §8.4
 # Minimum RAW cosine similarity for a hit to count as evidence (decision 14 Oct 2026, replaces
-# DEPENDENCIES §5.3). Teman2's 0.15 (constants.py:96) gates a COMPOSITE evidence_score
-# (reasoning_utils.py:341: source quality 0-0.4 + relevance 0-0.6), not raw cosine, so it is
+# DEPENDENCIES §5.3). The upstream 0.15 (``EvidenceScoreConstants.ABSTAIN_THRESHOLD``) gates a
+# COMPOSITE evidence_score (source quality 0-0.4 + relevance 0-0.6), not raw cosine, so it is
 # not reused here. 0.35 is provisional (midpoint of the mock gap 0.200-0.527) and MUST be
 # recalibrated with real OpenAI embeddings in G4 before A2 counts as passed.
 DEFAULT_MIN_SCORE = 0.35

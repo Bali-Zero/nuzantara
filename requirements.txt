@@ -1,10 +1,10 @@
-# Showroom unit 1 runtime — pinned to Teman2 apps/backend-rag/requirements.lock.txt @ ad3278690d.
+# Showroom unit 1 runtime — pinned to the upstream lockfile (snapshot 14 Oct 2026, internal record SR-U1-2026-10-14).
 # Measured 14 Oct 2026. opentelemetry and sentence-transformers are guarded/optional and intentionally absent.
 asyncpg==0.31.0
 httpx==0.28.1
 openai==2.53.0
 tiktoken==0.14.0
-# core/qdrant_db.py:334 builds httpx.AsyncClient(http2=True) lazily -> needs h2 (and its deps).
+# core/qdrant_db.py builds httpx.AsyncClient(http2=True) lazily -> needs h2 (and its deps).
 h2==4.4.1
 hpack==4.2.0
 hyperframe==6.1.0

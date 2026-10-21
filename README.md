@@ -8,7 +8,7 @@ Only what is safe to be public goes into this repo. Every PR must pass this chec
 
 1. **No secrets.** No credentials, API keys, tokens, internal URLs, or `.env` contents. Use `.env.example` with empty values.
 2. **No real data.** No client data, real names, or production documents. Synthetic sample material only.
-3. **No production map.** No line numbers, internal commit hashes, production collection or database names, or Dockerfile details. Refer to modules by name only.
+3. **No production map.** No line numbers, internal commit hashes, production collection or database names, or Dockerfile details. Refer to modules by name only. Carve-out: code carried verbatim keeps its upstream identifiers (it is checksum-pinned in each unit's `verbatim.sha256`); the rule applies in full to everything written for this repo — docs, comments, scripts, tests.
 4. **No internal people or tickets.** Write "pending review", not a colleague's name or an internal PR/ticket number.
 5. **When in doubt, leave it out.** If you are unsure whether a detail may be public, remove it and ask in the PR.
 
@@ -24,7 +24,7 @@ Only what is safe to be public goes into this repo. Every PR must pass this chec
 
 | Unit | Latest gate |
 |---|---|
-| pengetahuan-jawaban-bersumber (sourced answers) | G2 (dependencies) — approved 14 Oct 2026 · G3 (carry + adapter) and G4 preparation — pending review |
+| pengetahuan-jawaban-bersumber (sourced answers) | G3 (carry + adapter) and G4 preparation — merged 20 Oct 2026 · G4 clean-clone check passed in `mock-only` and `lexical` modes (16 Oct 2026) · `openai` mode and threshold calibration — pending (needs a showroom-only API key) |
 
 ## Capability 1 — pengetahuan → jawaban bersumber (sourced answers)
 
